@@ -177,7 +177,7 @@ function animate() {
 animate();
 ----
 
-=== Velocity
+=== Chute sur le sol
 
 Les deux personnages vont être animés afin d'arriver au niveau du sol. 
 Il faut intégrer une nouvelle valeur à notre `Sprite` qui est la vélocité, sa vitesse de déplacement sur l'axe des abscisses et des ordonnées.
@@ -291,7 +291,195 @@ function animate() {
 animate();
 ----
 
+Nous constatons maintenant que nos sprites se déplacent à l'écran comme convenu ... mais.... ils disparaissent, car leur chute continue sans tenir compte du "sol" de notre canvas.
+
+Cela n'est pas choquant ! Puisque dans la méthode `update()`, qui est appelée à chaque changement de frame, ajoute 10 à la coordonnée Y des objets.
+
+Il va falloir donc mettre en place un premier test conditionnel afin de stopper le déplacement sur l'axe Y lorsque nos personnages touchent le sol.
+
+Rappelons que les Sprites sont des rectangles dont le tracé de départ est déterminé par la coordonnée `X` et `Y` de la position.
+À partir de la hauteur du `Sprite` et de la hauteur du `Canvas`, nous pouvons facilement déterminer quand le sprite touchera le sol.
 
 
+image::img/img4.png[]
+
+La hauteur et la largeur de notre `Sprite`  sont codés en dur dans la méthode `Draw()`.
 
 
+Nous allons faire une petite modification du constructeur et de la méthode pour que la hauteur et la largeur du `Sprite` soient un paramètre.
+
+[source, javascript]
+----
+
+class Sprite {
+    constructor({velocity, position })
+    {
+        this.position = position;
+        this.velocity = velocity;
+        this.width = 50;
+        this.height = 150;
+    }
+
+    draw() {
+        c.fillStyle = 'red';
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    }
+
+    // [....]
+
+}
+----
+
+Maintenant nous pouvons écrire notre condition de détection de collision avec le sol dans la méthode `update()`.
+
+Jusqu'à présent, nous avons mis une vitesse de chute de 10. Nous allons en profiter pour utiliser la vitesse propre de l'objet définie par  `velocity.y`.
+
+La vitesse de chute `velocity.y` doit être égale à 0, lorsque notre `Sprite` touche le sol.
+
+[source, javascript]
+----
+// [....]
+    update() {
+        this.draw();
+        this.position.y += this.velocity.y;
+        if(this.position.y + this.height + this.velocity.y >=  canvas.height ) {
+            this.velocity.y = 0;
+        }
+    }
+// [....]
+----
+
+image::img/img5.png[]
+
+Nous allons nous occuper de ce "problème" en introduisant une nouvelle constante qui va influencer notre "chute" : La *gravité*.
+
+La *gravité*, est une *accélération* qui va accroitre la vitesse de notre objet en chute en fonction du temps qui s'écoule.
+Pour simplifier les calculs, nous ne prendrons pas réellement la définition physique du monde réel.
+
+[source, javascript]
+----
+// [....]
+const gravity = 0.2;
+c.fillRect(0,0, canvas.width,canvas.height);
+
+class Sprite {
+// [....]
+    update() {
+        this.draw();
+        this.velocity.y += gravity;
+        this.position.y += this.velocity.y;
+        if(this.position.y + this.height + this.velocity.y >=  canvas.height ) {
+            this.velocity.y = 0;
+        }
+    }
+}
+// [....]
+----
+
+En testant, nous nous rendons compte que nos `Sprites` continuent de s'enfoncer doucement dans le sol !
+
+Si nous examinons notre code, cela n'est pas choquant. En effet, lorsque le Sprite touche le sol. Sa vélocité égale 0, mais elle continue d'être incrémenté par le facteur `gravity` à chaque nouvelle *frame*.
+
+Pour corriger cela, il suffit de modifier la vélocité *uniquement* si le `Sprite` ne touche pas le sol.  À savoir, dans un bloc `else` de notre test de position.
+
+[source, javascript]
+----
+// [....]
+const gravity = 0.2;
+c.fillRect(0,0, canvas.width,canvas.height);
+
+class Sprite {
+// [....]
+    update() {
+        this.draw();
+
+        this.position.y += this.velocity.y;
+        if(this.position.y + this.height + this.velocity.y >=  canvas.height ) {
+            this.velocity.y = 0;
+        }
+        else {
+            this.velocity.y += gravity;
+        }
+    }
+}
+// [....]
+----
+
+
+=== Contrôle des personnages
+
+Nous souhaitons maintenant avoir la possibilité de controller nos deux personnages avec les touches du clavier.
+
+Il faut pour cela brancher un `listener` sur la fenêtre du navigateur qui se déclenche lorsque l'on presse une touche du clavier et qui exécute une fonction de *callback*.
+
+Cette fonction reçoit un objet `event`  du `listener` dans lequel se trouve une clé nommée : `key`, qui contient la valeur de la touche du clavier pressée.
+
+
+Pour cela nous allons écrire un petit bout de code à la suite de notre fichier `script.js`.
+
+[source, javascript]
+----
+window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        case  "d" :
+            player.velocity.x = 1
+            break;
+    }
+})
+----
+
+Nous testons et nous constatons qu'il ne se passe rien !! Notre Sprite est toujours figé !
+Cela est normal ! Il faut maintenant modifier la méthode `update()` afin de gérer les déplacements sur l'axe des abscisses en fonction de la vélocité.
+
+[source, javascript]
+----
+update() {
+        this.draw();
+        this.position.x += this.velocity.x;
+        // [...]
+    }
+----
+
+Toutefois, lorsque nous appuyons sur la touche 'd', et que nous la relachons, le sprite continue son chemin ! Car nous n'avons pas géré cet aspect.
+
+Il faut maintenant ajouter un nouvel `eventListener` basé cette fois sur l'action `keyup` (la touche est relâchée) et ensuite mettre une vélocité sur l'axe des abscisses à 0.
+
+[source, javascript]
+----
+window.addEventListener("keyup", (e) => {
+    switch (e.key) {
+        case  "d" :
+            player.velocity.x = 0
+            break;
+    }
+})
+----
+
+Répétons l'opération pour la touche `q`.
+
+[source, javascript]
+----
+window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        case  "d" :
+            player.velocity.x = 1
+            break;
+        case  "q" :
+            player.velocity.x = -1
+            break;
+    }
+})
+
+window.addEventListener("keyup", (e) => {
+    switch (e.key) {
+        case  "d" :
+            player.velocity.x = 0
+            break;
+        case  "q" :
+            player.velocity.x = 0
+            break;
+    }
+})
+----
+
+Essayons maintenant de jouer avec le déplacement. Nous constatons rapidement qu'il y a un problème de fluidité lorsque l'on veut soudainement changer de direction.

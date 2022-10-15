@@ -5,7 +5,7 @@ const c = canvas.getContext("2d");
 canvas.width=1024;
 canvas.height=576;
 
-// Creation Background de couleur noir
+const gravity = 0.2;
 c.fillRect(0,0, canvas.width,canvas.height);
 
 class Sprite {
@@ -13,18 +13,24 @@ class Sprite {
     {
         this.position = position;
         this.velocity = velocity;
+        this.width = 50;
+        this.height = 150;
     }
 
     draw() {
         c.fillStyle = 'red';
-        c.fillRect(this.position.x, this.position.y, 50, 150);
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
     }
 
     update() {
         this.draw();
-
-        if(this.position.y < canvas.height - 150) {
-            this.position.y += 10;
+        this.position.x += this.velocity.x;
+        this.position.y += this.velocity.y;
+        if(this.position.y + this.height + this.velocity.y >=  canvas.height ) {
+            this.velocity.y = 0;
+        }
+        else {
+            this.velocity.y += gravity;
         }
     }
 }
@@ -40,18 +46,27 @@ function animate() {
 }
 animate()
 
-window.addEventListener('keypress', (event) => {
 
-    switch (event.key) {
-        case "d" :
-            console.log("d");
-        break;
-        case "q" :
-            console.log("q");
-        break;
-        case "z" :
-            console.log("z");
-        break;
+window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        case  "d" :
+            player.velocity.x = 1
+            break;
+        case  "q" :
+            player.velocity.x = -1
+            break;
     }
-});
+})
+
+window.addEventListener("keyup", (e) => {
+    switch (e.key) {
+        case  "d" :
+            player.velocity.x = 0
+            break;
+        case  "q" :
+            player.velocity.x = 0
+            break;
+    }
+})
+
 
