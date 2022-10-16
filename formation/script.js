@@ -37,11 +37,30 @@ class Sprite {
 const player = new Sprite( { position : { x:10,y:0 } , velocity:{x:0, y:0}}  );
 const enemy = new Sprite({velocity : {x:0, y:0}, position : {x: 964, y:0 }});
 
+const keys = {
+    d: {
+        pressed: false
+    },
+    q: {
+        pressed: false
+    },
+    z: {
+        pressed: false
+    }
+}
+
+let lastKey;
 function animate() {
     window.requestAnimationFrame( animate );
     c.clearRect(0,0, canvas.width, canvas.height);
     player.update();
     enemy.update();
+    player.velocity.x = 0;
+    if(keys.d.pressed && lastKey === 'd') {
+        player.velocity.x = 1;
+    } else if (keys.q.pressed && lastKey === 'q') {
+        player.velocity.x = -1;
+    }
 
 }
 animate()
@@ -50,21 +69,32 @@ animate()
 window.addEventListener("keydown", (e) => {
     switch (e.key) {
         case  "d" :
-            player.velocity.x = 1
+            keys.d.pressed = true;
+            lastKey = "d";
             break;
         case  "q" :
-            player.velocity.x = -1
+            keys.q.pressed = true
+            lastKey = "q";
+            break;
+        case  "z" :
+            player.velocity.y = -10;
             break;
     }
+
+    console.log(e.key)
 })
+
 
 window.addEventListener("keyup", (e) => {
     switch (e.key) {
         case  "d" :
-            player.velocity.x = 0
+            keys.d.pressed = false
             break;
         case  "q" :
-            player.velocity.x = 0
+            keys.q.pressed = false
+            break;
+        case  "z" :
+            keys.z.pressed = false
             break;
     }
 })

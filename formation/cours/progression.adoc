@@ -406,7 +406,7 @@ class Sprite {
 ----
 
 
-=== Contrôle des personnages
+=== Contrôle des personnages : Droite et Gauche
 
 Nous souhaitons maintenant avoir la possibilité de controller nos deux personnages avec les touches du clavier.
 
@@ -483,3 +483,111 @@ window.addEventListener("keyup", (e) => {
 ----
 
 Essayons maintenant de jouer avec le déplacement. Nous constatons rapidement qu'il y a un problème de fluidité lorsque l'on veut soudainement changer de direction.
+On ressent une sorte de temps d'arrêt à cause de notre code qui définie la vélocité à zéro dès que l'une des touches de direction est relâchée.
+
+Au lieu de gérer la vélocité directement dans les `Listener` nous allons créer une constante `keys` qui sera un objet listant les touches de direction utilisable dans le jeu, associée à une valeur booléenne : pressée ou pas pressée.
+
+Puis dans la fonction `animate()`, nous gérerons la vélocité des joueurs en fonction des valeurs booléennes de l'objet `keys`.
+
+Il faudra penser à modifier le comportement des `listeners`;
+
+[source, javascript]
+----
+[....]
+const keys = {
+    d: {
+        pressed: false
+    },
+    q: {
+        pressed: false
+    }
+}
+
+
+function animate() {
+    window.requestAnimationFrame( animate );
+    c.clearRect(0,0, canvas.width, canvas.height);
+    player.update();
+    enemy.update();
+    player.velocity.x = 0;
+    if(keys.d.pressed) {
+        player.velocity.x = 1;
+    } else if (keys.q.pressed) {
+        player.velocity.x = -1;
+    }
+}
+animate()
+
+window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        case  "d" :
+            keys.d.pressed = true
+            break;
+        case  "q" :
+            keys.q.pressed = true
+            break;
+    }
+})
+
+window.addEventListener("keyup", (e) => {
+    switch (e.key) {
+        case  "d" :
+            keys.d.pressed = false
+            break;
+        case  "q" :
+            keys.q.pressed = false
+            break;
+    }
+})
+----
+
+Lorsque nous maintenant D pressé et qu'ensuite nous pressons Q, le personnage continue d'aller vers la droite.
+
+Alors que si nous pressons Q et qu'ensuite nous pressons D, le personnage change de direction.
+
+Cela est dû à notre bloc conditionnel de la méthode `animate` qui teste en premier si D est pressé.
+
+Nous pouvons corriger ce comportement en créant une variable qui stockera la valeur de la dernière touche saisie.
+
+Nous modifirons alors notre bloc conditionnel afin de modifier la vélocité uniquement :
+SI la touche a été pressée ET SI elle est la dernière pressée.
+
+
+[source, javascript]
+----
+let lastKey;
+function animate() {
+    window.requestAnimationFrame( animate );
+    c.clearRect(0,0, canvas.width, canvas.height);
+    player.update();
+    enemy.update();
+    player.velocity.x = 0;
+    if(keys.d.pressed && lastKey === 'd') {
+        player.velocity.x = 1;
+    } else if (keys.q.pressed && lastKey === 'q') {
+        player.velocity.x = -1;
+    }
+
+}
+animate();
+
+window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        case  "d" :
+            keys.d.pressed = true;
+            lastKey = "d";
+            break;
+        case  "q" :
+            keys.q.pressed = true
+            lastKey = "q";
+            break;
+        case  "z" :
+            keys.z.pressed = true
+            lastKey = "z";
+            break;
+    }
+})
+----
+
+=== Contrôle des personnages : Saut
+
