@@ -1,5 +1,6 @@
-== JsFighter II ! L'ultime tutoriel !
-=== Création des fichiers de base.
+= JsFighter II ! L'ultime tutoriel !
+
+== Création des fichiers de base.
 Mise en place de la structure HTML de base :
 
 [source,html]
@@ -50,7 +51,7 @@ N'oubliez pas de créer un fichier `script.js` qui contiendra nos premières lig
 ====
 
 :sectnums:
-=== Mise en place du background
+== Mise en place du background
 
 Il faut définir un premier espace dans lequel seront dessinés nos premiers personnages ! (_Des rectangles pour commencer !_).
 
@@ -88,7 +89,7 @@ Dessinons donc notre background :
 c.fillRect(0, 0, canvas.width, canvas.height);
 ----
 
-=== Création des deux joueurs.
+== Création des deux joueurs.
 
 Nous distinguerons le joueur de gauche, qui sera appelé `Player` et le joueur de droite, qui sera appelé `Enemy`.
 
@@ -159,7 +160,7 @@ Vous devriez avoir ce rendu actuellement :
 image::img/img2.png[]
 
 
-=== Boucle d'animation
+== Boucle d'animation
 
 Avant de commencer à vouloir coder les animations de nos personnages, il va falloir mettre en place une boucle d'animation.
 
@@ -177,7 +178,7 @@ function animate() {
 animate();
 ----
 
-=== Chute sur le sol
+== Chute sur le sol
 
 Les deux personnages vont être animés afin d'arriver au niveau du sol. 
 Il faut intégrer une nouvelle valeur à notre `Sprite` qui est la vélocité, sa vitesse de déplacement sur l'axe des abscisses et des ordonnées.
@@ -227,7 +228,7 @@ const enemy = new Sprite({
 enemy.draw();
 ----
 
-=== Méthode `Update()`
+== Méthode `Update()`
 
 Nos `Sprite` vont changer de position sur les deux axes.
 Nous avons vu que le navigateur met à jour les *frames* d'animations grâce à la méthode `animate()` que nous avons créée.
@@ -406,7 +407,7 @@ class Sprite {
 ----
 
 
-=== Contrôle des personnages : Droite et Gauche
+== Contrôle du joueur : Droite et Gauche
 
 Nous souhaitons maintenant avoir la possibilité de controller nos deux personnages avec les touches du clavier.
 
@@ -581,13 +582,178 @@ window.addEventListener("keydown", (e) => {
             keys.q.pressed = true
             lastKey = "q";
             break;
+    }
+})
+----
+
+== Contrôle des personnages : Saut
+
+Pour effectuer un saut, il suffira de modifier la vélocité sur l'axe Y lorsque l'on appuiera sur la touche concernée, la gravité programmée précédemment se chargera du reste.
+
+[source, javascript]
+----
+window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        case  "d" :
+            keys.d.pressed = true;
+            lastKey = "d";
+            break;
+        case  "q" :
+            keys.q.pressed = true
+            lastKey = "q";
+            break;
         case  "z" :
-            keys.z.pressed = true
-            lastKey = "z";
+            player.velocity.y = -10;
             break;
     }
 })
 ----
 
-=== Contrôle des personnages : Saut
 
+== Contrôle de l'ennemi : Déplacements "gauche" et "droite"
+
+
+Nous allons maintenant copier/coller une partie du code afin de permettre au joueur "ennemi" de contrôler son personnage avec les flèches directionnelles du clavier.
+
+Toutefois, rapidement, nous allons constater un problème avec la variable `lastkey` qui stocke la dernière touche pressée par le joueur 1.
+
+Nous pourrons envisager de créer  une autre variable appelée `lastkey_enemy` par exemple. Mais pourquoi ne pas tirer profit de la programmation orientée objet, et de faire de `lastkey` un paramètre propre à l'instance d'un sprite ?
+
+_Classe `Sprite` :_
+[source, javascript]
+----
+ // [....]
+class Sprite {
+    constructor({velocity, position })
+    {
+        this.position = position;
+        this.velocity = velocity;
+        this.width = 50;
+        this.height = 150;
+        this.lastKey;
+    }
+    // [....]
+ }
+----
+
+_Fonction `animate()` :_
+[source, javascript]
+----
+// [...]
+function animate() {
+// [...]
+    enemy.velocity.x=0;
+    // [...]
+    // Mouvement de l'ennemi
+    if(keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
+        enemy.velocity.x = 1;
+    } else if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
+        enemy.velocity.x = -1;
+    }
+    // [...]
+}
+// [...]
+----
+
+_Les `listener` :_
+[source, javascript]
+----
+// [...]
+window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        // [...]
+        case  "ArrowRight" :
+            keys.ArrowRight.pressed = true;
+            enemy.lastKey = "ArrowRight";
+            break;
+        case  "ArrowLeft" :
+            keys.ArrowLeft.pressed = true
+            enemy.lastKey = "ArrowLeft";
+            break;
+        case  "ArrowUp" :
+            enemy.velocity.y = -10;
+            break;
+    }
+
+})
+
+window.addEventListener("keyup", (e) => {
+    switch (e.key) {
+        // [...]
+        case  "ArrowLeft" :
+            keys.ArrowLeft.pressed = false
+            break;
+        case  "ArrowRight" :
+            keys.ArrowRight.pressed = false
+            break;
+    }
+})
+// [...]
+----
+
+Objet `Keys` :
+[source, javascript]
+----
+const keys = {
+    d: {
+        pressed: false
+    },
+    q: {
+        pressed: false
+    },
+    z: {
+        pressed: false
+    },
+    ArrowLeft: {
+        pressed: false
+    },
+    ArrowRight: {
+        pressed: false
+    },
+    ArrowUp: {
+        pressed: false
+    }
+}
+----
+
+== L'attaque
+
+Nous allons mettre en place le système d'attaque.
+
+Il consistera en une zone rectangulaire qui encadrera la portée maximum d'un coup que l'on appellera une `AttackBox`.
+
+Si le corps de l'adversaire est en contacte avec cette zone, alors le coup sera considéré comme porté et blessant sa cible.
+
+Une `AttackBox` est un rectangle, que nous tracerons en fournissant : une hauteur, une largeur et un point de départ.
+
+[source, javascript]
+----
+class Sprite {
+    constructor({velocity, position })
+    {
+       // [....]
+        this.attackBox = {
+            position: this.position,
+            width:100,
+            height: 50
+        }
+    }
+
+    draw() {
+        // [....]
+        // AttackBox
+        c.fillStyle = 'green';
+        c.fillRect(
+            this.attackBox.position.x,
+            this.attackBox.position.y,
+            this.attackBox.width,
+            this.attackBox.height
+        );
+    }
+----
+
+
+
+
+
+Il est temps de réfléchir à la manière où seront détectées les collisions.
